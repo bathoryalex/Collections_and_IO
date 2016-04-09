@@ -35,6 +35,17 @@ namespace SeekAndArchive
             }
 
             Console.ReadKey();
+
+            watchers = new List<FileSystemWatcher>();
+
+            foreach (FileInfo fil in FoundFiles)
+            {
+                FileSystemWatcher newWatcher = new FileSystemWatcher(fil.DirectoryName, fil.Name);
+                newWatcher.Changed += new FileSystemEventHandler(WatcherChanged);
+
+                newWatcher.EnableRaisingEvents = true;
+                watchers.Add(newWatcher);
+            }
         }
 
         static List<FileInfo> FoundFiles;
@@ -50,6 +61,14 @@ namespace SeekAndArchive
             {
                 RecursiveSearch(foundFiles, fileName, dir);
             }
+        }
+
+        static List<FileSystemWatcher> watchers;
+
+        static void WatcherChanged(object sender, FileSystemEventArgs e)
+        {
+            if(e.ChangeType == WatcherChangeTypes.Changed)
+                Console.WriteLine("{0} has been changed!", e.FullPath);
         }
     }
 }
