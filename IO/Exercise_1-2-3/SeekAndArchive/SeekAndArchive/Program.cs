@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.IO.Compression;
 
 namespace SeekAndArchive
 {
@@ -22,7 +23,6 @@ namespace SeekAndArchive
                 Console.WriteLine("The specified directory does not exist.");
                 return;
             }
-
 
 
             RecursiveSearch(FoundFiles, fileName, rootDir);
@@ -46,6 +46,13 @@ namespace SeekAndArchive
                 newWatcher.EnableRaisingEvents = true;
                 watchers.Add(newWatcher);
             }
+
+            archiveDirs = new List<DirectoryInfo>();
+
+            for (int i = 0; i < FoundFiles.Count; i++)
+            {
+                archiveDirs.Add(Directory.CreateDirectory("archive" + i.ToString()));
+            }
         }
 
         static List<FileInfo> FoundFiles;
@@ -67,8 +74,36 @@ namespace SeekAndArchive
 
         static void WatcherChanged(object sender, FileSystemEventArgs e)
         {
-            if(e.ChangeType == WatcherChangeTypes.Changed)
-                Console.WriteLine("{0} has been changed!", e.FullPath);
+            Console.WriteLine("{0} has been changed!", e.FullPath);
+
+            FileSystemWatcher senderWatcher = (FileSystemWatcher)sender;
+            int index = watchers.IndexOf(senderWatcher, 0);
+
+            ArchiveFile(archiveDirs[index], FoundFiles[index]);
         }
+
+        static List<DirectoryInfo> archiveDirs;
+
+        static void ArchiveFile(DirectoryInfo archiveDir, FileInfo fileToArchive)
+        {
+            FileStream input = fileToArchive.OpenRead();
+            FileStream output = File.Create(archiveDir.FullName + @"\" + fileToArchive.Name + ".gz");
+
+            GZipStream Compressor = new GZipStream(output, CompressionMode.Compress);
+
+            int b = input.ReadByte();
+
+            while (b != -1)
+            {
+                Compressor.WriteByte((byte) b);
+                b = input.ReadByte();
+            }
+
+            Compressor.Close();
+            input.Close();
+            output.Close();
+        }
+
+
     }
 }
